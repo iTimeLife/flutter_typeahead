@@ -293,7 +293,8 @@ class TypeAheadFormField<T> extends FormField<String> {
       bool keepSuggestionsOnLoading: true,
       bool keepSuggestionsOnSuggestionSelected: false,
       bool autoFlipDirection: false,
-      bool hideKeyboard: false})
+      bool hideKeyboard: false,
+      bool hideKeyBroadOnScroll: false})
       : assert(
             initialValue == null || textFieldConfiguration.controller == null),
         super(
@@ -341,7 +342,8 @@ class TypeAheadFormField<T> extends FormField<String> {
                   keepSuggestionsOnSuggestionSelected:
                       keepSuggestionsOnSuggestionSelected,
                   autoFlipDirection: autoFlipDirection,
-                  hideKeyboard: hideKeyboard);
+                  hideKeyboard: hideKeyboard,
+                  hideKeyBroadOnScroll: hideKeyBroadOnScroll);
             });
 
   @override
@@ -670,6 +672,9 @@ class TypeAheadField<T> extends StatefulWidget {
   final bool autoFlipDirection;
   final bool hideKeyboard;
 
+  /// 滚动时隐藏键盘
+  bool hideKeyBroadOnScroll;
+
   /// Creates a [TypeAheadField]
   TypeAheadField(
       {Key key,
@@ -696,7 +701,8 @@ class TypeAheadField<T> extends StatefulWidget {
       this.keepSuggestionsOnLoading: true,
       this.keepSuggestionsOnSuggestionSelected: false,
       this.autoFlipDirection: false,
-      this.hideKeyboard: false})
+      this.hideKeyboard: false,
+      this.hideKeyBroadOnScroll})
       : assert(suggestionsCallback != null),
         assert(itemBuilder != null),
         assert(onSuggestionSelected != null),
@@ -785,7 +791,9 @@ class _TypeAheadFieldState<T> extends State<TypeAheadField<T>>
       if (_effectiveFocusNode.hasFocus) {
         this._suggestionsBox.open();
       } else {
-        this._suggestionsBox.close();
+        if(!widget.hideKeyBroadOnScroll){
+          this._suggestionsBox.close();
+        }
       }
     };
 
@@ -841,35 +849,45 @@ class _TypeAheadFieldState<T> extends State<TypeAheadField<T>>
     }
   }
 
+
   void _initOverlayEntry() {
     this._suggestionsBox._overlayEntry = OverlayEntry(builder: (context) {
-      final suggestionsList = _SuggestionsList<T>(
-        suggestionsBox: _suggestionsBox,
-        decoration: widget.suggestionsBoxDecoration,
-        debounceDuration: widget.debounceDuration,
-        controller: this._effectiveController,
-        loadingBuilder: widget.loadingBuilder,
-        noItemsFoundBuilder: widget.noItemsFoundBuilder,
-        errorBuilder: widget.errorBuilder,
-        transitionBuilder: widget.transitionBuilder,
-        suggestionsCallback: widget.suggestionsCallback,
-        animationDuration: widget.animationDuration,
-        animationStart: widget.animationStart,
-        getImmediateSuggestions: widget.getImmediateSuggestions,
-        onSuggestionSelected: (T selection) {
-          if (!widget.keepSuggestionsOnSuggestionSelected) {
-            this._effectiveFocusNode.unfocus();
-            this._suggestionsBox.close();
-          }
-          widget.onSuggestionSelected(selection);
-        },
-        itemBuilder: widget.itemBuilder,
-        direction: _suggestionsBox.direction,
-        hideOnLoading: widget.hideOnLoading,
-        hideOnEmpty: widget.hideOnEmpty,
-        hideOnError: widget.hideOnError,
-        keepSuggestionsOnLoading: widget.keepSuggestionsOnLoading,
-      );
+      Widget suggestionsList = _SuggestionsList<T>(
+            suggestionsBox: _suggestionsBox,
+            decoration: widget.suggestionsBoxDecoration,
+            debounceDuration: widget.debounceDuration,
+            controller: this._effectiveController,
+            loadingBuilder: widget.loadingBuilder,
+            noItemsFoundBuilder: widget.noItemsFoundBuilder,
+            errorBuilder: widget.errorBuilder,
+            transitionBuilder: widget.transitionBuilder,
+            suggestionsCallback: widget.suggestionsCallback,
+            animationDuration: widget.animationDuration,
+            animationStart: widget.animationStart,
+            getImmediateSuggestions: widget.getImmediateSuggestions,
+            onSuggestionSelected: (T selection) {
+              if (!widget.keepSuggestionsOnSuggestionSelected) {
+                this._effectiveFocusNode.unfocus();
+                this._suggestionsBox.close();
+              }
+              widget.onSuggestionSelected(selection);
+            },
+            itemBuilder: widget.itemBuilder,
+            direction: _suggestionsBox.direction,
+            hideOnLoading: widget.hideOnLoading,
+            hideOnEmpty: widget.hideOnEmpty,
+            hideOnError: widget.hideOnError,
+            keepSuggestionsOnLoading: widget.keepSuggestionsOnLoading,
+        );
+
+      if(widget.hideKeyBroadOnScroll){
+          suggestionsList=GestureDetector(
+            child: suggestionsList,
+            onPanDown: (_){
+              FocusScope.of(context).unfocus();
+            },
+          );
+      }
 
       double w = _suggestionsBox.textBoxWidth;
       if (widget.suggestionsBoxDecoration.constraints != null) {
