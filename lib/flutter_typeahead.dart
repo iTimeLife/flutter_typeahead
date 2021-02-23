@@ -294,7 +294,7 @@ class TypeAheadFormField<T> extends FormField<String> {
       bool keepSuggestionsOnSuggestionSelected: false,
       bool autoFlipDirection: false,
       bool hideKeyboard: false,
-      bool hideKeyBroadOnScroll: false})
+      Function hideKeyBroadOnScroll})
       : assert(
             initialValue == null || textFieldConfiguration.controller == null),
         super(
@@ -673,7 +673,7 @@ class TypeAheadField<T> extends StatefulWidget {
   final bool hideKeyboard;
 
   /// 滚动时隐藏键盘
-  bool hideKeyBroadOnScroll;
+  Function hideKeyBroadOnScroll;
 
   /// Creates a [TypeAheadField]
   TypeAheadField(
@@ -791,7 +791,7 @@ class _TypeAheadFieldState<T> extends State<TypeAheadField<T>>
       if (_effectiveFocusNode.hasFocus) {
         this._suggestionsBox.open();
       } else {
-        if(!widget.hideKeyBroadOnScroll){
+        if(widget.hideKeyBroadOnScroll==null || !widget.hideKeyBroadOnScroll()){
           this._suggestionsBox.close();
         }
       }
@@ -880,14 +880,14 @@ class _TypeAheadFieldState<T> extends State<TypeAheadField<T>>
             keepSuggestionsOnLoading: widget.keepSuggestionsOnLoading,
         );
 
-      if(widget.hideKeyBroadOnScroll){
           suggestionsList=GestureDetector(
             child: suggestionsList,
             onPanDown: (_){
-              FocusScope.of(context).unfocus();
+              if(widget.hideKeyBroadOnScroll !=null && widget.hideKeyBroadOnScroll()){
+                      FocusManager.instance.primaryFocus.unfocus();
+              }
             },
           );
-      }
 
       double w = _suggestionsBox.textBoxWidth;
       if (widget.suggestionsBoxDecoration.constraints != null) {
