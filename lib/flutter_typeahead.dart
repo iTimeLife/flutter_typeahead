@@ -748,6 +748,8 @@ class _TypeAheadFieldState<T> extends State<TypeAheadField<T>>
       KeyboardVisibilityController().onChange;
   StreamSubscription<bool> _keyboardVisibilitySubscription;
 
+  bool _unfocusOnPan = false;
+
   @override
   void didChangeMetrics() {
     // Catch keyboard event and orientation change; resize suggestions list
@@ -791,9 +793,10 @@ class _TypeAheadFieldState<T> extends State<TypeAheadField<T>>
       if (_effectiveFocusNode.hasFocus) {
         this._suggestionsBox.open();
       } else {
-        if(widget.hideKeyBroadOnScroll==null || !widget.hideKeyBroadOnScroll()){
+        if(widget.hideKeyBroadOnScroll==null || !widget.hideKeyBroadOnScroll() || !_unfocusOnPan){
           this._suggestionsBox.close();
         }
+        _unfocusOnPan=false;
       }
     };
 
@@ -884,7 +887,10 @@ class _TypeAheadFieldState<T> extends State<TypeAheadField<T>>
             child: suggestionsList,
             onPanDown: (_){
               if(widget.hideKeyBroadOnScroll !=null && widget.hideKeyBroadOnScroll()){
+                    if(_effectiveFocusNode.hasFocus){
+                      this._unfocusOnPan=true;
                       FocusManager.instance.primaryFocus.unfocus();
+                    }
               }
             },
           );
